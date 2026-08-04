@@ -1,8 +1,6 @@
+from backend.report.pdf_generator import PDFGenerator
 from urllib.parse import urlparse
 
-from backend.repository.parser import RepositoryParser
-from backend.ai.prompt_builder import PromptBuilder
-from backend.ai.gemini_client import GeminiClient
 from backend.ai.prompt_builder import PromptBuilder
 from backend.ai.gemini_client import GeminiClient
 
@@ -12,8 +10,10 @@ class RepositoryService:
         self.parser = RepositoryParser()
 
         self.prompt_builder = PromptBuilder()
-
+        
         self.gemini = GeminiClient()
+
+        self.pdf_generator = PDFGenerator()
 
     def validate_repository_url(self, repo_url: str):
         """
@@ -112,6 +112,15 @@ class RepositoryService:
         summary = self.gemini.generate_response(prompt)
 
         repository_info["ai_summary"] = summary
+        recommendation_prompt = self.prompt_builder.build_recommendation_prompt(
+            analysis
+        )
+
+        recommendations = self.gemini.generate_response(
+            recommendation_prompt
+        )
+
+        repository_info["ai_recommendations"] = recommendations
 
         return repository_info
     def ask_question(self, repo_url: str, question: str):
@@ -143,3 +152,36 @@ class RepositoryService:
             "question": question,
             "answer": answer
         }
+    def generate_pdf_report(self, repo_url):
+
+        if not self.validate_repository_url(repo_url):
+            return None
+
+        clone_path = self.parser.clone_repository(repo_url)
+
+        repository_info = self._build_analysis(clone_path)
+
+        prompt = self.prompt_builder.build_summary_prompt(
+            repository_info["analysis"]
+        )
+
+        summary = self.gemini.generate_response(prompt)
+
+        repository_info["ai_summary"] = summary
+        recommendation_prompt = self.prompt_builder.build_recommendation_prompt(
+            repository_info["analysis"]
+        )
+
+        recommendations = self.gemini.generate_response(
+            recommendation_prompt
+        )
+
+        repository_info["ai_recommendations"] = recommendations
+        filename = "Repository_Analysis_Report.pdf"
+
+        self.pdf_generator.generate_report(
+            repository_info,
+            filename
+        )
+
+        return filename

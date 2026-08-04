@@ -158,7 +158,6 @@ if st.session_state.analysis:
     # =====================================
     # File Statistics
     # =====================================
-
     st.divider()
 
     st.header("📊 Repository Statistics")
@@ -168,37 +167,14 @@ if st.session_state.analysis:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.metric("Total Files", statistics["total_files"])
+        st.metric("📄 Total Files", statistics["total_files"])
 
     with col2:
-        st.metric("Detected Languages", len(data["languages"]))
-    # =====================================
-    # Repository Statistics
-    # =====================================
+        st.metric("📁 Total Directories", statistics["total_directories"])
 
-    st.divider()
-
-    st.header("📊 Repository Statistics")
-
-    statistics = data["statistics"]
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric(
-            "📄 Total Files",
-            statistics["total_files"]
-        )
-
-    with col2:
-        st.metric(
-            "📁 Total Directories",
-            statistics["total_directories"]
-        )
-
-    # =====================================
-    # AI Summary
-    # =====================================
+        # =====================================
+        # AI Summary
+        # =====================================
 
     st.divider()
 
@@ -206,7 +182,44 @@ if st.session_state.analysis:
 
     with st.expander("View AI Summary", expanded=True):
         st.markdown(data["ai_summary"])
+    # =====================================
+    # Generate PDF Report
+    # =====================================
 
+    st.divider()
+
+    st.header("📄 Export Analysis Report")
+
+    if st.button("Generate PDF Report"):
+
+        with st.spinner("Generating report..."):
+
+            response = requests.post(
+                "http://127.0.0.1:8000/generate-report",
+                params={
+                    "repo_url": st.session_state.repo_url
+                }
+            )
+
+            if response.status_code == 200:
+
+                with open("Repository_Analysis_Report.pdf", "wb") as file:
+                    file.write(response.content)
+
+                st.success("PDF Generated Successfully!")
+
+                with open("Repository_Analysis_Report.pdf", "rb") as file:
+
+                    st.download_button(
+                        label="⬇ Download Repository Report",
+                        data=file,
+                        file_name="Repository_Analysis_Report.pdf",
+                        mime="application/pdf"
+                    )
+
+            else:
+
+                st.error("Unable to generate PDF.")
     # =====================================
     # Ask AI
     # =====================================
@@ -247,4 +260,3 @@ if st.session_state.analysis:
                 else:
 
                     st.error("Unable to get AI response.")
-    
