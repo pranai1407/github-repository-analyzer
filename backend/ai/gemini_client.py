@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 from google import genai
 
@@ -29,7 +30,13 @@ class GeminiClient:
                 contents=prompt
             )
 
-            return response.text
+            text = response.text.strip()
+
+            try:
+                return json.loads(text)
+
+            except json.JSONDecodeError:
+                return text
 
         except Exception as e:
 

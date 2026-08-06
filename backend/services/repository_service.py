@@ -1,4 +1,6 @@
 from backend.report.pdf_generator import PDFGenerator
+from backend.repository.parser import RepositoryParser
+
 from urllib.parse import urlparse
 
 from backend.ai.prompt_builder import PromptBuilder
@@ -152,31 +154,7 @@ class RepositoryService:
             "question": question,
             "answer": answer
         }
-    def generate_pdf_report(self, repo_url):
-
-        if not self.validate_repository_url(repo_url):
-            return None
-
-        clone_path = self.parser.clone_repository(repo_url)
-
-        repository_info = self._build_analysis(clone_path)
-
-        prompt = self.prompt_builder.build_summary_prompt(
-            repository_info["analysis"]
-        )
-
-        summary = self.gemini.generate_response(prompt)
-
-        repository_info["ai_summary"] = summary
-        recommendation_prompt = self.prompt_builder.build_recommendation_prompt(
-            repository_info["analysis"]
-        )
-
-        recommendations = self.gemini.generate_response(
-            recommendation_prompt
-        )
-
-        repository_info["ai_recommendations"] = recommendations
+    def generate_pdf_report(self, repository_info):
         filename = "Repository_Analysis_Report.pdf"
 
         self.pdf_generator.generate_report(

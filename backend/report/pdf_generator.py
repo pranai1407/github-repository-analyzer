@@ -3,9 +3,13 @@ from reportlab.platypus import (
     Paragraph,
     Spacer,
     Table,
-    TableStyle
+    TableStyle,
+    Image
 )
-
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import os
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.enums import TA_CENTER
@@ -13,7 +17,29 @@ from reportlab.lib.units import inch
 
 
 class PDFGenerator:
+    def create_language_chart(self, languages):
 
+        labels = list(languages.keys())
+        sizes = list(languages.values())
+
+        plt.figure(figsize=(5, 5))
+
+        plt.pie(
+            sizes,
+            labels=labels,
+            autopct="%1.1f%%",
+            startangle=140
+        )
+
+        plt.title("Programming Languages")
+
+        chart_path = "language_chart.png"
+
+        plt.savefig(chart_path, bbox_inches="tight")
+
+        plt.close()
+
+        return chart_path
     def generate_report(self, data, filename):
 
         document = SimpleDocTemplate(filename)
@@ -215,6 +241,23 @@ class PDFGenerator:
         )
 
         elements.append(language_table)
+        # ----------------------------------------
+        # Language Pie Chart
+        # ----------------------------------------
+
+        chart_path = self.create_language_chart(data["languages"])
+
+        elements.append(Spacer(1, 0.2 * inch))
+
+        elements.append(
+            Image(
+                chart_path,
+                width=250,
+                height=250
+            )
+        )
+
+        elements.append(Spacer(1, 0.4 * inch))
 
         elements.append(Spacer(1, 0.4 * inch))
         # ----------------------------------------
@@ -334,7 +377,23 @@ class PDFGenerator:
         )
 
         elements.append(hotspot_table)
+        # ----------------------------------------
+        # Hotspot Files Chart
+        # ----------------------------------------
 
+        chart_path = self.create_hotspot_chart(
+            data["hotspot_files"]
+        )
+
+        elements.append(Spacer(1, 0.2 * inch))
+
+        elements.append(
+            Image(
+                chart_path,
+                width=420,
+                height=260
+            )
+        )
         elements.append(Spacer(1, 0.4 * inch))
         # ----------------------------------------
         # AI Summary
@@ -351,13 +410,32 @@ class PDFGenerator:
 
         summary = data["ai_summary"]
 
-        summary_paragraph = Paragraph(
-            summary.replace("\n", "<br/>"),
-            normal_style
-        )
+        # Repository Purpose
+        elements.append(Paragraph("<b>Repository Purpose</b>", normal_style))
+        elements.append(Paragraph(summary["repository_purpose"], normal_style))
+        elements.append(Spacer(1, 0.15 * inch))
 
-        elements.append(summary_paragraph)
+        # Technologies Used
+        elements.append(Paragraph("<b>Technologies Used</b>", normal_style))
 
+        for tech in summary["technologies_used"]:
+            elements.append(Paragraph(f"• {tech}", normal_style))
+
+        elements.append(Spacer(1, 0.15 * inch))
+
+        # Project Organization
+        elements.append(Paragraph("<b>Project Organization</b>", normal_style))
+        elements.append(Paragraph(summary["project_organization"], normal_style))
+        elements.append(Spacer(1, 0.15 * inch))
+
+        # Intended Users
+        elements.append(Paragraph("<b>Intended Users</b>", normal_style))
+        elements.append(Paragraph(summary["intended_users"], normal_style))
+        elements.append(Spacer(1, 0.15 * inch))
+
+        # Beginner Summary
+        elements.append(Paragraph("<b>Beginner Summary</b>", normal_style))
+        elements.append(Paragraph(summary["beginner_summary"], normal_style))
         elements.append(Spacer(1, 0.4 * inch))
         # ----------------------------------------
         # AI Recommendations
@@ -374,12 +452,60 @@ class PDFGenerator:
 
         recommendations = data["ai_recommendations"]
 
-        recommendation_paragraph = Paragraph(
-            recommendations.replace("\n", "<br/>"),
-            normal_style
-        )
+        # Repository Strengths
+        elements.append(Paragraph("<b>Repository Strengths</b>", normal_style))
 
-        elements.append(recommendation_paragraph)
+        for strength in recommendations["strengths"]:
+            elements.append(Paragraph(f"✔ {strength}", normal_style))
+
+        elements.append(Spacer(1, 0.15 * inch))
+
+        # Areas for Improvement
+        elements.append(Paragraph("<b>Areas for Improvement</b>", normal_style))
+
+        for improvement in recommendations["areas_for_improvement"]:
+            elements.append(Paragraph(f"• {improvement}", normal_style))
+
+        elements.append(Spacer(1, 0.15 * inch))
+
+        # Best Practices
+        elements.append(Paragraph("<b>Best Practices</b>", normal_style))
+
+        for practice in recommendations["best_practices"]:
+            elements.append(Paragraph(f"• {practice}", normal_style))
+
+        elements.append(Spacer(1, 0.15 * inch))
+
+        # Overall Quality
+        elements.append(Paragraph("<b>Overall Repository Quality</b>", normal_style))
+        elements.append(
+            Paragraph(
+                recommendations["overall_quality"],
+                normal_style
+            )
+        )
 
         elements.append(Spacer(1, 0.4 * inch))
         document.build(elements)
+    def create_hotspot_chart(self, hotspot_files):
+
+        files = [item[0] for item in hotspot_files[:10]]
+        commits = [item[1] for item in hotspot_files[:10]]
+
+        plt.figure(figsize=(8, 5))
+
+        plt.barh(files, commits)
+
+        plt.title("Top 10 Hotspot Files")
+
+        plt.xlabel("Number of Commits")
+
+        plt.tight_layout()
+
+        chart_path = "hotspot_chart.png"
+
+        plt.savefig(chart_path, bbox_inches="tight")
+
+        plt.close()
+
+        return chart_path

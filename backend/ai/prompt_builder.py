@@ -4,37 +4,56 @@ class PromptBuilder:
     """
 
     def build_summary_prompt(self, analysis):
+
         return f"""
-        You are an experienced software engineer.
+    You are an experienced software engineer.
 
-        Analyze the following repository.
+    Analyze the following GitHub repository.
 
-        Repository Name:
-        {analysis["repository_name"]}
+    Repository Name:
+    {analysis["repository_name"]}
 
-        Languages:
-        {analysis["languages"]}
+    Languages:
+    {analysis["languages"]}
 
-        Dependencies:
-        {analysis["dependencies"]}
+    Dependencies:
+    {analysis["dependencies"]}  
 
-        Repository Structure:
-        {analysis["structure"]}
+    Repository Structure:
+    {analysis["structure"]}
 
-        Documentation:
-        {analysis["documentation"]}
+    Documentation:
+    {analysis["documentation"]}
 
-        README:
-        {analysis["readme"]}
+    README:
+    {analysis["readme"]}
 
-        Write:
+    IMPORTANT:
 
-        1. Repository purpose
-        2. Technologies used
-        3. Project organization
-        4. Intended users
-        5. Beginner-friendly summary
-        """
+    Return ONLY valid JSON.
+
+    Do not return Markdown.
+
+    Do not return explanations.
+    Do not wrap the JSON in ```.
+
+    Return exactly in this format:
+
+    {{
+        "repository_purpose": "...",
+
+        "technologies_used": [
+            "...",
+            "..."
+        ],
+
+        "project_organization": "...",
+
+        "intended_users": "...",
+
+        "beginner_summary": "..."
+    }}
+    """
 
     def build_qa_prompt(self, analysis, question):
     
@@ -68,37 +87,58 @@ class PromptBuilder:
         say that clearly instead of guessing.
         """
     def build_recommendation_prompt(self, analysis):
+
         return f"""
-        You are an experienced software architect.
+    You are an experienced software architect.
 
-        Analyze this repository and provide recommendations.
+    Analyze the following GitHub repository.
 
-        Repository Name:
-        {analysis["repository_name"]}
+    Repository Name:
+    {analysis["repository_name"]}
 
-        Languages:
-        {analysis["languages"]}
+    Languages:
+    {analysis["languages"]}
 
-        Dependencies:
-        {analysis["dependencies"]}
+    Dependencies:
+    {analysis["dependencies"]}
 
-        Repository Structure:
-        {analysis["structure"]}
+    Repository Structure:
+    {analysis["structure"]}
 
-        Documentation:
-        {analysis["documentation"]}
+    Documentation:
+    {analysis["documentation"]}
 
-        README:
-        {analysis["readme"]}
+    README:
+    {analysis["readme"]}
 
-        Give:
+    IMPORTANT:
 
-        1. Repository Strengths (3-5 bullet points)
-        2. Areas for Improvement (3-5 bullet points)
-        3. Best Practices to Follow
-        4. Overall Repository Quality (Excellent / Good / Average / Needs Improvement)
+    Return ONLY valid JSON.
 
-        Keep the answer concise and professional.
-        """
+    Do not return Markdown.
+    Do not return explanations.
+    Do not wrap the JSON inside ```.
+
+    Return exactly in this format:
+
+    {{
+        "strengths": [
+            "...",
+            "..."
+        ],
+
+        "areas_for_improvement": [
+            "...",
+            "..."
+        ],
+
+        "best_practices": [
+            "...",
+            "..."
+        ],
+
+        "overall_quality": "Excellent"
+    }}
+    """
     def build_improvement_prompt(self, analysis):
         pass

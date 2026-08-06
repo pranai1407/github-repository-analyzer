@@ -172,16 +172,32 @@ if st.session_state.analysis:
     with col2:
         st.metric("📁 Total Directories", statistics["total_directories"])
 
-        # =====================================
-        # AI Summary
-        # =====================================
+    # =====================================
+    # AI Summary
+    # =====================================
 
     st.divider()
 
     st.header("🤖 AI Summary")
 
-    with st.expander("View AI Summary", expanded=True):
-        st.markdown(data["ai_summary"])
+    summary = data["ai_summary"]
+
+    st.subheader("📌 Repository Purpose")
+    st.write(summary["repository_purpose"])
+
+    st.subheader("🛠 Technologies Used")
+
+    for tech in summary["technologies_used"]:
+        st.write(f"• {tech}")
+
+    st.subheader("🏗 Project Organization")
+    st.write(summary["project_organization"])
+
+    st.subheader("👥 Intended Users")
+    st.write(summary["intended_users"])
+
+    st.subheader("📖 Beginner Summary")
+    st.write(summary["beginner_summary"])
     # =====================================
     # Generate PDF Report
     # =====================================
@@ -225,7 +241,34 @@ if st.session_state.analysis:
     # =====================================
 
     st.divider()
+    # =====================================
+    # AI Recommendations
+    # =====================================
 
+    st.divider()
+
+    st.header("💡 AI Recommendations")
+
+    recommendations = data["ai_recommendations"]
+
+    st.subheader("✅ Repository Strengths")
+
+    for strength in recommendations["strengths"]:
+        st.write(f"✔ {strength}")
+
+    st.subheader("⚠ Areas for Improvement")
+
+    for improvement in recommendations["areas_for_improvement"]:
+        st.write(f"• {improvement}")
+
+    st.subheader("⭐ Best Practices")
+
+    for practice in recommendations["best_practices"]:
+        st.write(f"• {practice}")
+
+    st.subheader("🏆 Overall Repository Quality")
+
+    st.success(recommendations["overall_quality"])
     st.header("💬 Ask AI")
 
     question = st.text_input(
