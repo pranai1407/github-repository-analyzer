@@ -40,16 +40,59 @@ if st.button("Analyze Repository"):
 
     if repo_url.strip() == "":
         st.error("Please enter a GitHub repository URL.")
+
     else:
 
         with st.spinner("Analyzing repository..."):
 
-            response = requests.post(
-                "http://127.0.0.1:8000/analyze",
-                params={
-                    "repo_url": repo_url
-                }
-            )
+            try:
+
+                response = requests.post(
+                    "http://127.0.0.1:8000/analyze",
+                    params={
+                        "repo_url": repo_url
+                    },
+                    timeout=120
+                )
+
+                if response.status_code == 200:
+
+                    result = response.json()
+
+                    if result.get("status") == "error":
+                        st.error(result.get("message", "Repository analysis failed."))
+
+                    else:
+                        st.session_state.analysis = result
+                        st.session_state.repo_url = repo_url
+                        st.success("Analysis Complete!")
+
+                else:
+
+                    st.error(
+                        f"Repository analysis failed "
+                        f"(HTTP {response.status_code})."
+                    )
+
+            except requests.exceptions.ConnectionError:
+
+                st.error(
+                    "❌ Unable to connect to the backend. "
+                    "Please make sure FastAPI is running on port 8000."
+                )
+
+            except requests.exceptions.Timeout:
+
+                st.error(
+                    "⏱ Repository analysis is taking too long. "
+                    "Please try again."
+                )
+
+            except requests.exceptions.RequestException:
+
+                st.error(
+                    "❌ Unable to communicate with the backend."
+                )
 
             if response.status_code == 200:
                 st.session_state.analysis = response.json()
@@ -210,37 +253,77 @@ if st.session_state.analysis:
 
         with st.spinner("Generating report..."):
 
-            response = requests.post(
-                "http://127.0.0.1:8000/generate-report",
-                params={
-                    "repo_url": st.session_state.repo_url
-                }
-            )
+            try:
 
-            if response.status_code == 200:
+                response = requests.post(
+                    "http://127.0.0.1:8000/generate-report",
+                    params={
+                        "repo_url": st.session_state.repo_url
+                    },
+                    timeout=120
+                )
 
-                with open("Repository_Analysis_Report.pdf", "wb") as file:
-                    file.write(response.content)
+                if response.status_code == 200:
 
-                st.success("PDF Generated Successfully!")
+                    with open(
+                        "Repository_Analysis_Report.pdf",
+                        "wb"
+                    ) as file:
 
-                with open("Repository_Analysis_Report.pdf", "rb") as file:
+                        file.write(response.content)
 
-                    st.download_button(
-                        label="⬇ Download Repository Report",
-                        data=file,
-                        file_name="Repository_Analysis_Report.pdf",
-                        mime="application/pdf"
-                    )
+                    st.success("PDF Generated Successfully!")
 
-            else:
+                    with open(
+                        "Repository_Analysis_Report.pdf",
+                        "rb"
+                    ) as file:
 
-                st.error("Unable to generate PDF.")
-    # =====================================
-    # Ask AI
-    # =====================================
+                        st.download_button(
+                            label="⬇ Download Repository Report",
+                            data=file,
+                            file_name="Repository_Analysis_Report.pdf",
+                            mime="application/pdf"
+                        )
 
-    st.divider()
+                else:
+
+                    try:
+
+                        error_data = response.json()
+
+                        st.error(
+                            error_data.get(
+                                "message",
+                                "Unable to generate PDF."
+                            )
+                        )
+
+                    except ValueError:
+
+                        st.error(
+                            "Unable to generate PDF."
+                        )
+
+            except requests.exceptions.ConnectionError:
+
+                st.error(
+                    "❌ Unable to connect to the backend. "
+                    "Please make sure FastAPI is running."
+                )
+
+            except requests.exceptions.Timeout:
+
+                st.error(
+                    "⏱ PDF generation is taking too long. "
+                    "Please try again."
+                )
+
+            except requests.exceptions.RequestException:
+
+                st.error(
+                    "❌ Unable to communicate with the backend."
+                )
     # =====================================
     # AI Recommendations
     # =====================================
@@ -275,31 +358,83 @@ if st.session_state.analysis:
         "Ask anything about this repository"
     )
 
+    # =====================================
+    # Ask AI
+    # =====================================
+
+    st.divider()
+
+    st.header("💬 Ask AI")
+
+    question = st.text_input(
+        "Ask anything about this repository"
+    )
+
     if st.button("Ask AI"):
 
         if question.strip() == "":
             st.warning("Please enter a question.")
 
+        elif not st.session_state.repo_url:
+            st.warning("Please analyze a repository first.")
+
         else:
 
             with st.spinner("Thinking..."):
 
-                response = requests.post(
-                    "http://127.0.0.1:8000/ask",
-                    params={
-                        "repo_url": st.session_state.repo_url,
-                        "question": question
-                    }
-                )
+                try:
 
-                if response.status_code == 200:
+                    response = requests.post(
+                        "http://127.0.0.1:8000/ask",
+                        params={
+                            "repo_url": st.session_state.repo_url,
+                            "question": question
+                        },
+                        timeout=120
+                    )
 
-                    answer = response.json()
+                    if response.status_code == 200:
 
-                    st.success("Answer")
+                        answer = response.json()
 
-                    st.markdown(answer["answer"])
+                        if answer.get("status") == "error":
 
-                else:
+                            st.error(
+                                answer.get(
+                                    "message",
+                                    "Unable to answer the question."
+                                )
+                            )
 
-                    st.error("Unable to get AI response.")
+                        else:
+
+                            st.success("Answer")
+
+                            st.markdown(answer["answer"])
+
+                    else:
+
+                        st.error(
+                            f"AI request failed "
+                            f"(HTTP {response.status_code})."
+                        )
+
+                except requests.exceptions.ConnectionError:
+
+                    st.error(
+                        "❌ Unable to connect to the backend. "
+                        "Please make sure FastAPI is running."
+                    )
+
+                except requests.exceptions.Timeout:
+
+                    st.error(
+                        "⏱ AI is taking too long to respond. "
+                        "Please try again."
+                    )
+
+                except requests.exceptions.RequestException:
+
+                    st.error(
+                        "❌ Unable to communicate with the AI service."
+                    )

@@ -97,34 +97,82 @@ class RepositoryService:
         return repository_info
     def analyze_repository(self, repo_url: str):
 
-        if not self.validate_repository_url(repo_url):
+        try:
+
+            # Validate URL
+            if not self.validate_repository_url(repo_url):
+                return {
+                    "status": "error",
+                    "message": "Please enter a valid GitHub repository URL."
+                }
+
+            # Clone Repository
+            clone_path = self.parser.clone_repository(repo_url)
+
+            if clone_path is None:
+                return {
+                    "status": "error",
+                    "message": "Unable to clone the repository. Please check if it exists or is public."
+                }
+
+            # Analyze Repository
+            repository_info = self._build_analysis(clone_path)
+
+            analysis = repository_info["analysis"]
+
+            # AI Summary
+            try:
+
+                prompt = self.prompt_builder.build_summary_prompt(
+                    analysis
+                )
+
+                summary = self.gemini.generate_response(prompt)
+
+                repository_info["ai_summary"] = summary
+
+            except Exception:
+
+                repository_info["ai_summary"] = {
+                    "repository_purpose": "AI Summary unavailable.",
+                    "technologies_used": [],
+                    "project_organization": "Unavailable.",
+                    "intended_users": "Unavailable.",
+                    "beginner_summary": "AI service is currently unavailable."
+                }
+
+            # AI Recommendations
+            try:
+
+                recommendation_prompt = (
+                    self.prompt_builder.build_recommendation_prompt(
+                        analysis
+                    )
+                )
+
+                recommendations = self.gemini.generate_response(
+                    recommendation_prompt
+                )
+
+                repository_info["ai_recommendations"] = recommendations
+
+            except Exception:
+
+                repository_info["ai_recommendations"] = {
+                    "strengths": [],
+                    "areas_for_improvement": [],
+                    "best_practices": [],
+                    "overall_quality": "Unavailable"
+                }
+
+            return repository_info
+
+        except Exception as e:
+
             return {
                 "status": "error",
-                "message": "Invalid GitHub repository URL."
+                "message": f"Repository analysis failed: {str(e)}"
             }
-
-        clone_path = self.parser.clone_repository(repo_url)
-
-        repository_info = self._build_analysis(clone_path)
-
-        analysis = repository_info["analysis"]
-
-        prompt = self.prompt_builder.build_summary_prompt(analysis)
-
-        summary = self.gemini.generate_response(prompt)
-
-        repository_info["ai_summary"] = summary
-        recommendation_prompt = self.prompt_builder.build_recommendation_prompt(
-            analysis
-        )
-
-        recommendations = self.gemini.generate_response(
-            recommendation_prompt
-        )
-
-        repository_info["ai_recommendations"] = recommendations
-
-        return repository_info
     def ask_question(self, repo_url: str, question: str):
         """
         Answers a user's question about the repository.
@@ -154,7 +202,37 @@ class RepositoryService:
             "question": question,
             "answer": answer
         }
-    def generate_pdf_report(self, repository_info):
+    def generate_pdf_report(self, repo_url):
+
+        if not self.validate_repository_url(repo_url):
+            return None
+
+        clone_path = self.parser.clone_repository(repo_url)
+
+        repository_info = self._build_analysis(clone_path)
+
+        # AI Summary
+        prompt = self.prompt_builder.build_summary_prompt(
+            repository_info["analysis"]
+        )
+
+        summary = self.gemini.generate_response(prompt)
+
+        repository_info["ai_summary"] = summary
+
+        # AI Recommendations
+        recommendation_prompt = (
+            self.prompt_builder.build_recommendation_prompt(
+                repository_info["analysis"]
+            )
+        )
+
+        recommendations = self.gemini.generate_response(
+            recommendation_prompt
+        )
+
+        repository_info["ai_recommendations"] = recommendations
+
         filename = "Repository_Analysis_Report.pdf"
 
         self.pdf_generator.generate_report(
