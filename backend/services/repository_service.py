@@ -149,12 +149,22 @@ class RepositoryService:
                         analysis
                     )
                 )
-
                 recommendations = self.gemini.generate_response(
                     recommendation_prompt
                 )
 
-                repository_info["ai_recommendations"] = recommendations
+                if isinstance(recommendations, dict):
+
+                    repository_info["ai_recommendations"] = recommendations
+
+                else:
+
+                    repository_info["ai_recommendations"] = {
+                        "strengths": [],
+                        "areas_for_improvement": [],
+                        "best_practices": [],
+                        "overall_quality": "Unavailable"
+                    }
 
             except Exception:
 
@@ -211,27 +221,77 @@ class RepositoryService:
 
         repository_info = self._build_analysis(clone_path)
 
+        # -----------------------------
         # AI Summary
-        prompt = self.prompt_builder.build_summary_prompt(
-            repository_info["analysis"]
-        )
+        # -----------------------------
 
-        summary = self.gemini.generate_response(prompt)
+        try:
 
-        repository_info["ai_summary"] = summary
-
-        # AI Recommendations
-        recommendation_prompt = (
-            self.prompt_builder.build_recommendation_prompt(
+            prompt = self.prompt_builder.build_summary_prompt(
                 repository_info["analysis"]
             )
-        )
 
-        recommendations = self.gemini.generate_response(
-            recommendation_prompt
-        )
+            summary = self.gemini.generate_response(prompt)
 
-        repository_info["ai_recommendations"] = recommendations
+            if isinstance(summary, dict):
+                repository_info["ai_summary"] = summary
+            else:
+                repository_info["ai_summary"] = {
+                    "repository_purpose": "AI Summary unavailable.",
+                    "technologies_used": [],
+                    "project_organization": "Unavailable.",
+                    "intended_users": "Unavailable.",
+                    "beginner_summary": "AI service returned an unexpected response."
+                }
+
+        except Exception:
+
+            repository_info["ai_summary"] = {
+                "repository_purpose": "AI Summary unavailable.",
+                "technologies_used": [],
+                "project_organization": "Unavailable.",
+                "intended_users": "Unavailable.",
+                "beginner_summary": "AI service is currently unavailable."
+            }
+
+        # -----------------------------
+        # AI Recommendations
+        # -----------------------------
+
+        try:
+
+            recommendation_prompt = (
+                self.prompt_builder.build_recommendation_prompt(
+                    repository_info["analysis"]
+                )
+            )
+
+            recommendations = self.gemini.generate_response(
+                recommendation_prompt
+            )
+
+            if isinstance(recommendations, dict):
+                repository_info["ai_recommendations"] = recommendations
+            else:
+                repository_info["ai_recommendations"] = {
+                    "strengths": [],
+                    "areas_for_improvement": [],
+                    "best_practices": [],
+                    "overall_quality": "Unavailable"
+                }
+
+        except Exception:
+
+            repository_info["ai_recommendations"] = {
+                "strengths": [],
+                "areas_for_improvement": [],
+                "best_practices": [],
+                "overall_quality": "Unavailable"
+            }
+
+        # -----------------------------
+        # Generate PDF
+        # -----------------------------
 
         filename = "Repository_Analysis_Report.pdf"
 

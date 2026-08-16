@@ -39,7 +39,7 @@ repo_url = st.text_input(
 if st.button("Analyze Repository"):
 
     if repo_url.strip() == "":
-        st.error("Please enter a GitHub repository URL.")
+        st.error("Please enter a valid GitHub repository URL.")
 
     else:
 
@@ -52,7 +52,7 @@ if st.button("Analyze Repository"):
                     params={
                         "repo_url": repo_url
                     },
-                    timeout=120
+                    timeout=300
                 )
 
                 if response.status_code == 200:
@@ -60,11 +60,19 @@ if st.button("Analyze Repository"):
                     result = response.json()
 
                     if result.get("status") == "error":
-                        st.error(result.get("message", "Repository analysis failed."))
+
+                        st.error(
+                            result.get(
+                                "message",
+                                "Repository analysis failed."
+                            )
+                        )
 
                     else:
+
                         st.session_state.analysis = result
                         st.session_state.repo_url = repo_url
+
                         st.success("Analysis Complete!")
 
                 else:
@@ -85,7 +93,7 @@ if st.button("Analyze Repository"):
 
                 st.error(
                     "⏱ Repository analysis is taking too long. "
-                    "Please try again."
+                    "The repository may be large. Please try again."
                 )
 
             except requests.exceptions.RequestException:
@@ -93,13 +101,6 @@ if st.button("Analyze Repository"):
                 st.error(
                     "❌ Unable to communicate with the backend."
                 )
-
-            if response.status_code == 200:
-                st.session_state.analysis = response.json()
-                st.session_state.repo_url = repo_url
-            else:
-                st.error("Failed to analyze repository.")
-
 # ----------------------------------------
 # Display Analysis
 # ----------------------------------------
